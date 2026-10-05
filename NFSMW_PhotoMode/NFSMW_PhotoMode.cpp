@@ -206,7 +206,7 @@ static bool PatchRelativeCallDirect(unsigned long address, void* destination)
 static const char* __fastcall NFSMW_PhotoMode_LocalizationHook(void*, unsigned int hash)
 {
     if (hash == kPhotoModeLabelHash)
-        return "PHOTO MODE";
+        return "Photomode";
 
     LocalizationLookup_t original = gLocalizationTrampoline;
     return original ? original(0, hash) : 0;
