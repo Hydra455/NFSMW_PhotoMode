@@ -22,6 +22,32 @@ struct Mat4
 #define VK_0 0x30
 #define VK_9 0x39
 
+static bool gShowButtons = true;
+
+static void LoadPhotoModeConfig(HMODULE module)
+{
+    char iniPath[MAX_PATH] = {0};
+    DWORD length = GetModuleFileNameA(module, iniPath, MAX_PATH);
+    if (!length || length >= MAX_PATH) return;
+
+    char* slash = 0;
+    for (char* p = iniPath; *p; ++p)
+        if (*p == '\\' || *p == '/') slash = p;
+    if (!slash) return;
+
+    const char iniName[] = "NFSMW_PhotoMode.ini";
+    if (static_cast<unsigned int>(slash - iniPath + 1) + sizeof(iniName) > MAX_PATH) return;
+    lstrcpyA(slash + 1, iniName);
+
+    char setting[32] = {0};
+    GetPrivateProfileStringA("Overlay", "ShowButtons", "true", setting,
+                             sizeof(setting), iniPath);
+    gShowButtons = (lstrcmpiA(setting, "false") != 0 &&
+                    lstrcmpiA(setting, "0") != 0 &&
+                    lstrcmpiA(setting, "no") != 0 &&
+                    lstrcmpiA(setting, "off") != 0);
+}
+
 static bool gPhotoActive = false;
 static bool gF8WasDown = false;
 static bool gEscWasDown = false;
@@ -1109,6 +1135,8 @@ static void DrawPhotoOverlay(IDirect3DDevice9* dev)
         DrawGradientQuad(dev,0,0,w,edgeH,blackMid,blackMid,clear,clear);
         DrawGradientQuad(dev,0,h-bottomH,w,h,clear,clear,blackStrong,blackStrong);
 
+        if (gShowButtons)
+        {
         gOverlayBatchCount=0;
         const float scale=(h/720.0f < 0.82f) ? 0.82f : (h/720.0f);
         const float px=2.0f*scale;
@@ -1136,6 +1164,7 @@ static void DrawPhotoOverlay(IDirect3DDevice9* dev)
         if (gOverlayBatchCount)
             dev->DrawPrimitiveUP(D3DPT_TRIANGLELIST,gOverlayBatchCount/3,
                                  gOverlayBatch,sizeof(OverlayVertex));
+        }
     }
 
     if (state)
@@ -1262,6 +1291,7 @@ BOOL APIENTRY DllMain(HMODULE hModule, DWORD reason, LPVOID)
     if (reason == DLL_PROCESS_ATTACH)
     {
         DisableThreadLibraryCalls(hModule);
+        LoadPhotoModeConfig(hModule);
         Install();
     }
     else if (reason == DLL_PROCESS_DETACH)
